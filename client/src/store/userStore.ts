@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { nanoid } from 'nanoid';
 import { socket } from '../services/socket';
+import { isOnPath, findNearestPathPosition, MAP_WIDTH, MAP_HEIGHT } from '../assets/mapData';
 
 interface User {
   id: string;
@@ -65,9 +66,31 @@ const saveUserData = (data: {
   }
 };
 
+// Get a random valid position on a path
+const getRandomValidPosition = (): { x: number; y: number } => {
+  // Try several random positions until finding one on a path
+  for (let i = 0; i < 50; i++) {
+    const x = Math.random() * (MAP_WIDTH - 100) + 50;
+    const y = Math.random() * (MAP_HEIGHT - 100) + 50;
+    
+    if (isOnPath(x, y)) {
+      return { x, y };
+    }
+  }
+  
+  // If no valid position found after several attempts, find the nearest path to center
+  return findNearestPathPosition(MAP_WIDTH / 2, MAP_HEIGHT / 2);
+};
+
 export const useUserStore = create<UserState>((set, get) => {
   // Load saved user data if available
   const savedUserData = loadUserData();
+  
+  // Ensure saved position is on a path, if not find nearest path
+  let initialPosition = savedUserData?.position || { x: MAP_WIDTH / 2, y: MAP_HEIGHT / 2 };
+  if (savedUserData && !isOnPath(initialPosition.x, initialPosition.y)) {
+    initialPosition = findNearestPathPosition(initialPosition.x, initialPosition.y);
+  }
   
   // Setup socket listeners for online users
   socket.on('onlineUsers', (users: User[]) => {
@@ -81,7 +104,7 @@ export const useUserStore = create<UserState>((set, get) => {
     socket.emit('userJoin', {
       id: savedUserData.userId,
       username: savedUserData.username,
-      position: savedUserData.position,
+      position: initialPosition, // Use validated position
       color: savedUserData.avatarColor
     });
   }
@@ -90,7 +113,7 @@ export const useUserStore = create<UserState>((set, get) => {
     // Initialize with saved data or defaults
     userId: savedUserData?.userId || null,
     username: savedUserData?.username || '',
-    position: savedUserData?.position || { x: 300, y: 300 },
+    position: initialPosition, // Use validated position
     avatarColor: savedUserData?.avatarColor || getRandomColor(),
     isLoggedIn: savedUserData ? true : false,
     onlineUsers: [],
@@ -98,7 +121,7 @@ export const useUserStore = create<UserState>((set, get) => {
     
     login: (username) => {
       const userId = nanoid(8);
-      const position = { x: Math.random() * 500 + 100, y: Math.random() * 300 + 100 };
+      const position = getRandomValidPosition();
       const avatarColor = getRandomColor();
       
       const userData = {
@@ -126,6 +149,11 @@ export const useUserStore = create<UserState>((set, get) => {
     },
     
     updatePosition: (position) => {
+      // Only allow movement on paths
+      if (!isOnPath(position.x, position.y)) {
+        return; // Don't update if not on a path
+      }
+      
       set({ position });
       
       // Update localStorage

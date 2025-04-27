@@ -6,6 +6,7 @@ import { useUserStore } from '../store/userStore';
 import { useChatStore } from '../store/chatStore';
 import { socket } from '../services/socket';
 import useKeyboardMovement from '../hooks/useKeyboardMovement';
+import { mapGrid, GRID_SIZE, MAP_WIDTH, MAP_HEIGHT, isOnPath, findNearestPathPosition } from '../assets/mapData';
 
 const Metaverse: React.FC = () => {
   const { 
@@ -49,6 +50,14 @@ const Metaverse: React.FC = () => {
   
   // Set up keyboard movement
   useKeyboardMovement(position, updatePosition, dimensions);
+  
+  // Ensure user starts on a valid path
+  useEffect(() => {
+    if (userId && !isOnPath(position.x, position.y)) {
+      const nearestPath = findNearestPathPosition(position.x, position.y);
+      updatePosition(nearestPath);
+    }
+  }, [userId, position.x, position.y, updatePosition]);
   
   // Connect to server and handle user updates
   useEffect(() => {
@@ -98,21 +107,117 @@ const Metaverse: React.FC = () => {
     }
   }, [nearbyUsers, openChat]);
 
+  // Determine if a cell is part of the central plaza
+  const isCentralPlaza = (x: number, y: number): boolean => {
+    const centerX = Math.floor(MAP_WIDTH / GRID_SIZE / 2);
+    const centerY = Math.floor(MAP_HEIGHT / GRID_SIZE / 2);
+    const plazaSize = 8;
+    
+    return (
+      Math.abs(x - centerX) <= plazaSize && 
+      Math.abs(y - centerY) <= plazaSize
+    );
+  };
+
+  // Determine if a cell is part of a main road (horizontal or vertical)
+  const isMainRoad = (x: number, y: number): boolean => {
+    // Check if on horizontal main roads
+    const horizontalMainRoads = [9, 10, 11, 19, 20, 21, 29, 30, 31];
+    
+    // Check if on vertical main roads
+    const verticalMainRoads = [14, 15, 16, 29, 30, 31, 44, 45, 46];
+    
+    return (
+      horizontalMainRoads.includes(y) || 
+      verticalMainRoads.includes(x)
+    );
+  };
+
+  // Render map grid cells
+  const renderMapGrid = () => {
+    const cells = [];
+    
+    for (let y = 0; y < mapGrid.length; y++) {
+      for (let x = 0; x < mapGrid[y].length; x++) {
+        const cell = mapGrid[y][x];
+        if (cell.type === 'path') {
+          // Determine cell type for styling
+          const isCentralCell = isCentralPlaza(x, y);
+          const isRoad = isMainRoad(x, y);
+          
+          // Apply different styles based on cell type
+          let cellStyle = "absolute border ";
+          let cellBg = "";
+          
+          if (isCentralCell) {
+            // Central plaza - more vibrant blue
+            cellBg = "bg-blue-500/20";
+            cellStyle += "border-blue-400/40";
+          } else if (isRoad) {
+            // Main roads - medium blue
+            cellBg = "bg-blue-500/15";
+            cellStyle += "border-blue-400/30";
+          } else {
+            // Regular paths - subtle blue
+            cellBg = "bg-blue-500/10";
+            cellStyle += "border-blue-400/20";
+          }
+          
+          cells.push(
+            <div 
+              key={`cell-${x}-${y}`}
+              className={`${cellStyle} ${cellBg}`}
+              style={{
+                left: cell.x,
+                top: cell.y,
+                width: GRID_SIZE,
+                height: GRID_SIZE,
+              }}
+            />
+          );
+        }
+      }
+    }
+    
+    return cells;
+  };
+
   return (
     <div className="relative w-full h-screen bg-gray-900 overflow-hidden">
       {/* Metaverse space */}
       <div 
         ref={metaverseRef}
-        className="relative w-full h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden"
+        className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-auto"
+        style={{ 
+          width: MAP_WIDTH, 
+          height: MAP_HEIGHT,
+          maxWidth: '100%',
+          maxHeight: '100vh',
+          margin: '0 auto',
+          position: 'relative',
+        }}
       >
-        {/* Grid lines for visual reference */}
-        <div className="absolute inset-0 grid grid-cols-8 sm:grid-cols-12 grid-rows-8 sm:grid-rows-12 gap-4 sm:gap-8 opacity-20 pointer-events-none">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <React.Fragment key={`grid-${i}`}>
-              <div className="col-span-1 row-span-full border-r border-blue-500/20" />
-              <div className="row-span-1 col-span-full border-b border-blue-500/20" />
-            </React.Fragment>
+        {/* Map background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
+        
+        {/* Star-like dots in the background */}
+        <div className="absolute inset-0 overflow-hidden">
+          {Array.from({ length: 100 }).map((_, i) => (
+            <div
+              key={`star-${i}`}
+              className="absolute w-1 h-1 bg-white rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                opacity: Math.random() * 0.5 + 0.1,
+              }}
+            />
           ))}
+        </div>
+
+        {/* Map grid with paths */}
+        <div className="absolute inset-0 pointer-events-none">
+          {renderMapGrid()}
         </div>
         
         {/* Current user's avatar */}
@@ -153,7 +258,7 @@ const Metaverse: React.FC = () => {
         
         {/* Movement instructions */}
         <div className="absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800/80 px-2 sm:px-4 py-1 sm:py-2 rounded-lg text-xs sm:text-sm text-white max-w-[90%] text-center">
-          Use arrow keys to move • Get close to others to chat
+          Use arrow keys to move • Stay on the paths • Get close to others to chat
         </div>
       </div>
     </div>

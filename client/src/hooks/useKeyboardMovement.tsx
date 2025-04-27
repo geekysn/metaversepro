@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { isOnPath, GRID_SIZE, MAP_WIDTH, MAP_HEIGHT } from '../assets/mapData';
 
 // Movement speed in pixels
 const MOVEMENT_SPEED = 10;
@@ -24,26 +25,13 @@ const useKeyboardMovement = (
   useEffect(() => {
     // Boundaries for the metaverse
     const BOUNDARY = {
-      MIN_X: 50,
-      MAX_X: (dimensions?.width || window.innerWidth) - 50,
-      MIN_Y: 50,
-      MAX_Y: (dimensions?.height || window.innerHeight) - 50,
+      MIN_X: 0,
+      MAX_X: MAP_WIDTH,
+      MIN_Y: 0,
+      MAX_Y: MAP_HEIGHT,
     };
     
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Skip if any input element is currently focused
-      const activeElement = document.activeElement;
-      if (
-        activeElement instanceof HTMLInputElement || 
-        activeElement instanceof HTMLTextAreaElement || 
-        activeElement instanceof HTMLSelectElement ||
-        activeElement?.tagName === 'INPUT' ||
-        activeElement?.tagName === 'TEXTAREA' ||
-        activeElement?.tagName === 'SELECT'
-      ) {
-        return;
-      }
-      
       let newX = position.x;
       let newY = position.y;
       
@@ -65,9 +53,37 @@ const useKeyboardMovement = (
           return; // Do nothing for other keys
       }
       
-      // Only update if position changed
-      if (newX !== position.x || newY !== position.y) {
-        updatePosition({ x: newX, y: newY });
+      // Check if the new position is on a valid path
+      if (isOnPath(newX, newY)) {
+        // Only update if position changed and is on a path
+        if (newX !== position.x || newY !== position.y) {
+          updatePosition({ x: newX, y: newY });
+        }
+      } else {
+        // Try moving in smaller increments to avoid getting stuck at edges
+        const smallerStep = MOVEMENT_SPEED / 2;
+        
+        // Try smaller steps in the same direction
+        switch (e.key) {
+          case 'ArrowUp':
+            newY = Math.max(BOUNDARY.MIN_Y, position.y - smallerStep);
+            break;
+          case 'ArrowDown':
+            newY = Math.min(BOUNDARY.MAX_Y, position.y + smallerStep);
+            break;
+          case 'ArrowLeft':
+            newX = Math.max(BOUNDARY.MIN_X, position.x - smallerStep);
+            break;
+          case 'ArrowRight':
+            newX = Math.min(BOUNDARY.MAX_X, position.x + smallerStep);
+            break;
+        }
+        
+        // Check again with the smaller step
+        if (isOnPath(newX, newY)) {
+          updatePosition({ x: newX, y: newY });
+        }
+        // If still not on path, don't move (stay on current position)
       }
     };
     
