@@ -39,7 +39,7 @@ const getRandomColor = () => {
 };
 
 // Distance threshold for "nearby" users in pixels
-const PROXIMITY_THRESHOLD = 150;
+const PROXIMITY_THRESHOLD = 100;
 
 // Helper function to load user data from localStorage
 const loadUserData = () => {

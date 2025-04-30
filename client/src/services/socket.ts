@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 // Connect to the WebSocket server
-export const socket = io('https://metaverse-backend.onrender.com', {
+export const socket = io(import.meta.env.VITE_BACKEND_URL_WS, {
   transports: ['websocket'],
   autoConnect: true,
 });
