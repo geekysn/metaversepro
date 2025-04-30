@@ -10,7 +10,7 @@ A web-based virtual world where users can move around, meet other people, and ch
 - **Real-time Interaction**: Meet other users as they move around the space
 - **Proximity Chat**: Chat with users who are near your avatar
 - **Customizable Avatars**: Choose your own username and avatar color
-- **Responsive Design**: Works on both desktop and mobile devices
+- **Responsive Design**: Works only on desktop(for the time being)
 
 ## Tech Stack
 
@@ -35,7 +35,7 @@ A web-based virtual world where users can move around, meet other people, and ch
 
 1. Clone the repository
    ```
-   git clone <repository-url>
+   https://github.com/geekysn/metaversepro.git
    cd metaversepro
    ```
 
@@ -69,7 +69,7 @@ A web-based virtual world where users can move around, meet other people, and ch
 
 ## How to Use
 
-1. Enter your username and select an avatar color on the login screen
+1. Enter your username on the login screen
 2. Use arrow keys to move your avatar around the world
 3. Stay on the path (blue-tinted tiles)
 4. When you approach other users, a chat panel will automatically appear
