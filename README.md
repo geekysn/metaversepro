@@ -1,4 +1,4 @@
-# 2D Metaverse
+# 2D Metaverse(under build)
 
 A web-based virtual world where users can move around, meet other people, and chat in real-time.
 
@@ -75,23 +75,6 @@ A web-based virtual world where users can move around, meet other people, and ch
 4. When you approach other users, a chat panel will automatically appear
 5. Send messages to nearby users through the chat panel
 
-## Project Structure
-
-```
-metaversepro/
-├── client/                 # Frontend React application
-│   ├── src/
-│   │   ├── assets/         # Static assets and map data
-│   │   ├── components/     # React components
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── services/       # API services
-│   │   └── store/          # Zustand state stores
-│   └── ...
-├── server/                 # Backend Node.js application
-│   ├── index.js            # Server entry point
-│   └── ...
-└── README.md
-```
 
 ## Contributing
 
